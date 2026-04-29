@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مختبر المغناطيس </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #e0f2fe;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background-image: radial-gradient(#bae6fd 1px, transparent 1px);
+            background-size: 20px 20px;
+            overflow: hidden;
+        }
+        .magnet {
+            width: 140px;
+            height: 45px;
+            display: flex;
+            cursor: grab;
+            position: absolute;
+            z-index: 10;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+            transition: transform 0.1s;
+        }
+        @media (min-width: 768px) {
+            .magnet { width: 160px; height: 50px; }
+        }
+        .magnet:active { cursor: grabbing; transform: scale(1.05); }
+        .pole {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 900;
+            font-size: 1.5rem;
+            border-radius: 8px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        .pole-n { background: linear-gradient(to bottom, #ef4444, #b91c1c); }
+        .pole-s { background: linear-gradient(to bottom, #3b82f6, #1d4ed8); }
+        
+        .item {
+            width: 60px;
+            height: 60px;
+            font-size: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: absolute;
+            z-index: 5;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @media (min-width: 768px) {
+            .item { width: 75px; height: 75px; font-size: 3rem; }
+        }
+        .item.attached {
+            z-index: 15;
+            transition: none;
+        }
+        
+        .speech-bubble {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 400px;
+            border: 3px solid #fbbf24;
+            z-index: 100;
+        }
+        @media (min-width: 768px) {
+            .speech-bubble { top: 20px; right: 20px; left: auto; transform: none; padding: 20px; }
+        }
+
+        .sparkle-effect {
+            position: absolute;
+            pointer-events: none;
+            z-index: 200;
+            animation: pop 0.5s ease-out forwards;
+        }
+        @keyframes pop {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        .controls-container {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 10px;
+            z-index: 100;
+        }
+        .btn-game {
+            padding: 10px 15px;
+            border-radius: 12px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.1s, background-color 0.2s;
+            font-size: 0.9rem;
+        }
+        @media (min-width: 768px) {
+            .btn-game { padding: 15px 25px; border-radius: 20px; font-size: 1.1rem; }
+        }
+        .btn-game:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="speech-bubble text-center">
+        <h2 class="text-xl md:text-2xl font-bold text-blue-600 mb-1">مختبر البطل عبدالله كريري</h2>
+        <p id="hint-text" class="text-sm md:text-lg text-gray-700">جرب تقريب المغناطيس من الأشياء أو من مغناطيس آخر!</p>
+    </div>
+
+    <!-- Magnets -->
+    <div id="mag1" class="magnet" style="top: 25%; left: 10%;">
+        <div class="pole pole-s">ج</div>
+        <div class="pole pole-n">ش</div>
+    </div>
+
+    <div id="mag2" class="magnet" style="top: 25%; left: 55%;">
+        <div class="pole pole-s">ج</div>
+        <div class="pole pole-n">ش</div>
+    </div>
+
+    <!-- Testing Items -->
+    <div class="item" style="top: 60%; left: 5%;" data-magnetic="true">📎</div>
+    <div class="item" style="top: 60%; left: 20%;" data-magnetic="true">🔑</div>
+    <div class="item" style="top: 60%; left: 35%;" data-magnetic="false">🧶</div>
+    <div class="item" style="top: 60%; left: 50%;" data-magnetic="true">🔩</div>
+    <div class="item" style="top: 60%; left: 65%;" data-magnetic="false">✏️</div>
+    <div class="item" style="top: 60%; left: 80%;" data-magnetic="true">🥄</div>
+
+    <div class="controls-container">
+        <button onclick="flipMagnet('mag1')" class="btn-game bg-red-500 hover:bg-red-600">
+            اقلب الأحمر 🔄
+        </button>
+        <button onclick="flipMagnet('mag2')" class="btn-game bg-blue-500 hover:bg-blue-600">
+            اقلب الأزرق 🔄
+        </button>
+        <button onclick="window.location.reload()" class="btn-game bg-gray-700 hover:bg-gray-800">
+            تنظيف المختبر ✨
+        </button>
+    </div>
+</div>
+
+<script>
+    const magnets = document.querySelectorAll('.magnet');
+    const items = document.querySelectorAll('.item');
+    const hintText = document.getElementById('hint-text');
+    const heroName = "عبدالله حسن كريري"; 
+    
+    let activeElement = null;
+    let offset = { x: 0, y: 0 };
+    let attachedItems = new Map();
+
+    function flipMagnet(id) {
+        const mag = document.getElementById(id);
+        const poles = Array.from(mag.children);
+        mag.style.transform = 'scale(1.1) rotate(180deg)';
+        setTimeout(() => {
+            mag.innerHTML = '';
+            mag.appendChild(poles[1]);
+            mag.appendChild(poles[0]);
+            mag.style.transform = 'scale(1) rotate(0deg)';
+            checkPhysics();
+        }, 150);
+    }
+
+    function onStart(e) {
+        const target = e.target.closest('.magnet, .item');
+        if (!target) return;
+        
+        activeElement = target;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        const rect = target.getBoundingClientRect();
+        offset.x = clientX - rect.left;
+        offset.y = clientY - rect.top;
+        
+        target.style.zIndex = 100;
+        
+        if (target.classList.contains('item')) {
+            target.classList.remove('attached');
+            attachedItems.delete(target);
+        }
+    }
+
+    function onMove(e) {
+        if (!activeElement) return;
+        
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        let newX = clientX - offset.x;
+        let newY = clientY - offset.y;
+        
+        // Boundary limits
+        newX = Math.max(0, Math.min(newX, window.innerWidth - activeElement.offsetWidth));
+        newY = Math.max(0, Math.min(newY, window.innerHeight - activeElement.offsetHeight));
+
+        activeElement.style.left = newX + 'px';
+        activeElement.style.top = newY + 'px';
+        
+        if (activeElement.classList.contains('magnet')) {
+            updateAttachedItems(activeElement);
+        }
+        
+        checkPhysics();
+    }
+
+    function onEnd() {
+        if (!activeElement) return;
+        activeElement.style.zIndex = activeElement.classList.contains('magnet') ? 10 : 5;
+        activeElement = null;
+    }
+
+    function updateAttachedItems(mag) {
+        items.forEach(item => {
+            if (attachedItems.get(item) === mag) {
+                const magRect = mag.getBoundingClientRect();
+                const rel = item.dataset.relOffset ? JSON.parse(item.dataset.relOffset) : {x:0, y:0};
+                item.style.left = (magRect.left + rel.x) + 'px';
+                item.style.top = (magRect.top + rel.y) + 'px';
+            }
+        });
+    }
+
+    function checkPhysics() {
+        const mag1 = document.getElementById('mag1');
+        const mag2 = document.getElementById('mag2');
+        const mag1Rect = mag1.getBoundingClientRect();
+        const mag2Rect = mag2.getBoundingClientRect();
+
+        // Magnet vs Magnet
+        const distMagnets = getDistance(mag1Rect, mag2Rect);
+        const magneticThreshold = window.innerWidth < 768 ? 140 : 180;
+        
+        if (distMagnets < magneticThreshold) {
+            handleMagnetInteraction(mag1, mag2);
+        }
+
+        // Magnet vs Items
+        items.forEach(item => {
+            if (activeElement === item) return;
+            
+            const itemRect = item.getBoundingClientRect();
+            const isMagnetic = item.getAttribute('data-magnetic') === 'true';
+            
+            magnets.forEach(mag => {
+                const magRect = mag.getBoundingClientRect();
+                const dist = getDistance(itemRect, magRect);
+                const itemThreshold = window.innerWidth < 768 ? 80 : 100;
+                
+                if (dist < itemThreshold && isMagnetic) {
+                    if (!attachedItems.has(item)) {
+                        snapToMagnet(item, mag);
+                    }
+                }
+            });
+        });
+    }
+
+    function handleMagnetInteraction(m1, m2) {
+        const r1 = m1.getBoundingClientRect();
+        const r2 = m2.getBoundingClientRect();
+        const p1_right = m1.lastElementChild.innerText;
+        const p2_left = m2.firstElementChild.innerText;
+        
+        const center1 = r1.left + r1.width / 2;
+        const center2 = r2.left + r2.width / 2;
+        
+        // Check which poles are facing (approximate logic based on relative center positions)
+        if (p1_right === p2_left) {
+            hintText.innerText = `انتبه يا بطل ! الأقطاب المتشابهة تتنافر! 💨`;
+            hintText.parentElement.style.borderColor = "#ef4444";
+            
+            const pushFactor = 15;
+            if (activeElement === m1) {
+                m2.style.left = (r2.left + pushFactor) + 'px';
+            } else {
+                m1.style.left = (r1.left - pushFactor) + 'px';
+            }
+            updateAttachedItems(m1);
+            updateAttachedItems(m2);
+        } else {
+            hintText.innerText = `رائع يا بطل ! الأقطاب المختلفة تتجاذب! ❤️`;
+            hintText.parentElement.style.borderColor = "#3b82f6";
+            
+            const gap = r2.left - r1.right;
+            if (gap > 5) {
+                const pullFactor = 10;
+                if (activeElement === m1) {
+                    m2.style.left = (r2.left - pullFactor) + 'px';
+                } else {
+                    m1.style.left = (r1.left + pullFactor) + 'px';
+                }
+                updateAttachedItems(m1);
+                updateAttachedItems(m2);
+            }
+        }
+    }
+
+    function snapToMagnet(item, mag) {
+        const magRect = mag.getBoundingClientRect();
+        const itemRect = item.getBoundingClientRect();
+        
+        item.classList.add('attached');
+        const offsetX = itemRect.left - magRect.left;
+        const offsetY = itemRect.top - magRect.top;
+        
+        item.dataset.relOffset = JSON.stringify({x: offsetX, y: offsetY});
+        attachedItems.set(item, mag);
+        
+        hintText.innerText = `أحسنت يا بطل ! لقد التقطت شيئاً! 📎✨`;
+        createEffect(itemRect.left + itemRect.width/2, itemRect.top + itemRect.height/2);
+    }
+
+    function getDistance(r1, r2) {
+        const x1 = r1.left + r1.width / 2;
+        const y1 = r1.top + r1.height / 2;
+        const x2 = r2.left + r2.width / 2;
+        const y2 = r2.top + r2.height / 2;
+        return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+    }
+
+    function createEffect(x, y) {
+        const div = document.createElement('div');
+        div.className = 'sparkle-effect text-2xl md:text-3xl';
+        div.style.left = (x - 15) + 'px';
+        div.style.top = (y - 15) + 'px';
+        div.innerText = '✨';
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 500);
+    }
+
+    // Event Listeners
+    window.addEventListener('mousedown', onStart);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onEnd);
+    window.addEventListener('touchstart', (e) => {
+        if (e.target.tagName !== 'BUTTON') {
+            onStart(e);
+        }
+    });
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onEnd);
+
+    // Initial position cleanup for mobile
+    window.addEventListener('resize', () => {
+        // Simple logic to keep things in view on rotate
+        magnets.forEach(m => {
+            const r = m.getBoundingClientRect();
+            if (r.right > window.innerWidth) m.style.left = (window.innerWidth - r.width - 10) + 'px';
+            if (r.bottom > window.innerHeight) m.style.top = (window.innerHeight - r.height - 100) + 'px';
+        });
+    });
+
+</script>
+</body>
+</html>
